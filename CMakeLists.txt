@@ -57,8 +57,6 @@ add_executable(depth_generation
   src/depth_generation.cc
   src/supporting_alg.cc
 )
-
-
 target_link_libraries(depth_generation
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
@@ -69,6 +67,11 @@ target_link_libraries(depth_generation
 
 add_executable(drone_control src/drone_control.cc)
 target_link_libraries(drone_control
+  ${catkin_LIBRARIES}
+  ${DJIOSDK_LIBRARIES})
+
+add_executable(test_vel_cmd src/test_vel_cmd.cc)
+target_link_libraries(test_vel_cmd
   ${catkin_LIBRARIES}
   ${DJIOSDK_LIBRARIES})
 
