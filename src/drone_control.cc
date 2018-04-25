@@ -8,6 +8,7 @@ ros::ServiceClient               drone_task_service;
 ros::Publisher 				           ctrl_vel_cmd_pub;                  // Velocity control command sent to the FC
 ros::Publisher 				           rpy_pub;                           // Publish roll, pitch, yaw in radians
 geometry_msgs::TwistStamped	     vel_cmd;
+std_msgs::Bool					interrupt_signal = false;
 geometry_msgs::QuaternionStamped attitude_state;
 sensor_msgs::NavSatFix           current_gps_position;
 uint8_t                          flight_status               = 255; // Enum representing drone state upon take off
@@ -33,7 +34,7 @@ int main(int argc, char** argv)
   ros::Subscriber control_cmd_sub   = nh.subscribe("uav_nav/vel_cmd",  	      1, &velCmdCb);
   
   // Subsribe to safety interrupt signal
-  ros::Subscriber safety_signal   = nh.subscribe("std_msgs/Bool",  	      1, &safeSig);
+  ros::Subscriber safety_signal   = nh.subscribe("std_msgs/Bool",  	      1, &safetySig);
 
   // Publish the control signal
   ctrl_vel_cmd_pub = nh.advertise<sensor_msgs::Joy>("dji_sdk/flight_control_setpoint_generic", 1);
@@ -42,7 +43,7 @@ int main(int argc, char** argv)
   if(isM100() && setLocalPositionRef())
   {
     bool ready = obtainControl(true) ? monitoredTakeOff() : false;
-    if(ready)
+    if(ready && !interrupt_signal)
       ctrl_state = 1;
   }
   else
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
     ROS_ERROR("Only the M100 is supported! || Could not set local position reference.");
     return 0;
   }
-
+  
   ros::spin();
   return 0;
 }
@@ -178,6 +179,11 @@ void sendVelCmd(geometry_msgs::TwistStamped cmd)
   controlVelYawRate.axes.push_back(flag);
 
   ctrl_vel_cmd_pub.publish(controlVelYawRate);
+}
+
+void safetySig(const std_msgs::Bool& safety_sig)
+{
+	interrupt_signal = *safety_sig;
 }
 
 void quatToEuler()
