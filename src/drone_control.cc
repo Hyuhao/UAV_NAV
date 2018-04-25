@@ -12,7 +12,7 @@ geometry_msgs::QuaternionStamped attitude_state;
 sensor_msgs::NavSatFix           current_gps_position;
 uint8_t                          flight_status               = 255; // Enum representing drone state upon take off
 uint8_t                          current_gps_health          = 0;   // Number of GPS satellite connections
-int 						                 ctrl_state 	        			 = 0;   // State machine controller
+int 			         ctrl_state   		 = 0;   // State machine controller
 
 int main(int argc, char** argv)
 {
@@ -31,6 +31,9 @@ int main(int argc, char** argv)
   ros::Subscriber gps_health_sub    = nh.subscribe("dji_sdk/gps_health",      1, &GPSHealthCb);
   ros::Subscriber attitude 		      = nh.subscribe("dji_sdk/attitude",        1, &attitudeCb);
   ros::Subscriber control_cmd_sub   = nh.subscribe("uav_nav/vel_cmd",  	      1, &velCmdCb);
+  
+  // Subsribe to safety interrupt signal
+  ros::Subscriber safety_signal   = nh.subscribe("std_msgs/Bool",  	      1, &safeSig);
 
   // Publish the control signal
   ctrl_vel_cmd_pub = nh.advertise<sensor_msgs::Joy>("dji_sdk/flight_control_setpoint_generic", 1);
