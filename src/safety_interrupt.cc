@@ -1,14 +1,13 @@
 #include <ros/ros.h>
-#include <std_msgs/Int8.h>
+#include <std_msgs/UInt8.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <geometry_msgs/PointStamped.h>
 
 // Global variables
-std_msgs::Int8 interrupt_signal;
+std_msgs::UInt8 interrupt_signal;
 ros::Publisher signal_interrupt;
-// ros::Subscriber safety 	= nh.subscribe("uav_nav/safety", 1, &safetyCb);
 double threshold_sec = 0.5;
 float ultrasonic_threshold = 2;
 float ultrasonic_intensity = 1;
@@ -25,7 +24,7 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
 	// Check range values
 	for (int n = 1; n  < 5; n++)
 	{
-	  if (*msg.ranges[n] < ultrasonic_threshold && *msg.ranges[n] > 0 && *msg.intensities[n] == ultrasonic_intensity)
+	  if (msg.ranges[n] < ultrasonic_threshold && msg.ranges[n] > 0 && msg.intensities[n] == ultrasonic_intensity)
 	  {
 	    safetyFlag = true;
             ROS_ERROR("Interrupt signal was triggered. Range reading was %f", msg.ranges[n]);
@@ -55,17 +54,7 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
 	safetyFlag = false;
 	return;
 }
-/*
-void safetyCb(const std_msgs::Bool& msg)
-{
-	safety_isSolved = msg->data;
-	if (safety_isSolved == true)
-	{
-		interrupt_signal.data = 0;	// Reset the interrupt signal
-	}
-	return;
-}
-*/
+
 void laser_scan_callback(const sensor_msgs::LaserScan& msg)
 {
 	std::string name = "depth sensor";
@@ -165,7 +154,7 @@ int main(int argc, char** argv)
 	ros::Subscriber vel_cmd_pub = nh.subscribe("uav_nav/vel_cmd", 1, &vel_cmd_callback);// vfh
 	
 	// Publisher
-	signal_interrupt = nh.advertise<std_msgs::Bool>("uav_nav/signal_interrupt", 1);
+	signal_interrupt = nh.advertise<std_msgs::UInt8>("uav_nav/signal_interrupt", 1);
 
 	interrupt_signal.data = 0;
 	ros::spin();
