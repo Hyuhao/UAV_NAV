@@ -1,4 +1,5 @@
 #include "uav_nav/drone_control.h"
+#include <std_msgs/Int8.h>
 
 // Global variables
 ros::ServiceClient               query_version_service;
@@ -7,12 +8,14 @@ ros::ServiceClient               sdk_ctrl_authority_service;
 ros::ServiceClient               drone_task_service;
 ros::Publisher 				           ctrl_vel_cmd_pub;                  // Velocity control command sent to the FC
 ros::Publisher 				           rpy_pub;                           // Publish roll, pitch, yaw in radians
+// ros::Publisher 				           safety_isSolved;                   // Safety signal
 geometry_msgs::TwistStamped	     vel_cmd;
 geometry_msgs::QuaternionStamped attitude_state;
 sensor_msgs::NavSatFix           current_gps_position;
 uint8_t                          flight_status               = 255; // Enum representing drone state upon take off
 uint8_t                          current_gps_health          = 0;   // Number of GPS satellite connections
-int 						                 ctrl_state 	        			 = 0;   // State machine controller
+int 				 ctrl_state		     = 0;   // State machine controller
+int 				 interrupt_msg               = 0;   // Msg from safety node
 
 int main(int argc, char** argv)
 {
@@ -31,10 +34,12 @@ int main(int argc, char** argv)
   ros::Subscriber gps_health_sub    = nh.subscribe("dji_sdk/gps_health",      1, &GPSHealthCb);
   ros::Subscriber attitude 		      = nh.subscribe("dji_sdk/attitude",        1, &attitudeCb);
   ros::Subscriber control_cmd_sub   = nh.subscribe("uav_nav/vel_cmd",  	      1, &velCmdCb);
+  ros::Subscriber control_cmd_sub   = nh.subscribe("uav_nav/signal_interrupt",  	      1, &interruptCb);
 
   // Publish the control signal
   ctrl_vel_cmd_pub = nh.advertise<sensor_msgs::Joy>("dji_sdk/flight_control_setpoint_generic", 1);
   rpy_pub          = nh.advertise<geometry_msgs::Vector3Stamped>("uav_nav/roll_pitch_yaw",     1);
+  // safety_isSolved  = nh.advertise<std_msgs::Bool>("uav_nav/safety",     1);
 
   if(isM100() && setLocalPositionRef())
   {
@@ -150,6 +155,19 @@ void attitudeCb(const geometry_msgs::QuaternionStamped::ConstPtr& msg)
   quatToEuler();
 }
 
+void interruptCb(const std_msgs::Int8::ConstPtr& msg)
+{
+  interrupt_msg = msg->data;
+  if (interrupt_msg == 1)
+  {
+	  ctrl_state = 0;
+  }
+  else if (interrupt_msg == 2)
+  {
+	  ctrl_state = 2;
+  }
+}
+
 void velCmdCb(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
   vel_cmd = *msg;
@@ -159,6 +177,10 @@ void velCmdCb(const geometry_msgs::TwistStamped::ConstPtr& msg)
     case 1:
       sendVelCmd(vel_cmd);
       break;
+    case 2:	//Rotate
+      vel_cmd.twist.linear.x = 0;
+      vel_cmd.twist.angular.z = 1;
+      sendVelCmd(vel_cmd);
   }
 }
 
