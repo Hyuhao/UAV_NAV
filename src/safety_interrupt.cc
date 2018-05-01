@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include <std_msgs/Int8.h>
-#include <std_msgs/Bool.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Vector3Stamped.h>
@@ -26,7 +25,7 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
 	// Check range values
 	for (int n = 1; n  < 5; n++)
 	{
-	  if (*msg.ranges[n] < ultrasonic_threshold && *msg.intensities[n] == ultrasonic_intensity)
+	  if (*msg.ranges[n] < ultrasonic_threshold && *msg.ranges[n] > 0 && *msg.intensities[n] == ultrasonic_intensity)
 	  {
 	    safetyFlag = true;
             ROS_ERROR("Interrupt signal was triggered. Range reading was %f", msg.ranges[n]);
