@@ -34,7 +34,7 @@ int main(int argc, char** argv)
   ros::Subscriber gps_health_sub    = nh.subscribe("dji_sdk/gps_health",      1, &GPSHealthCb);
   ros::Subscriber attitude 		      = nh.subscribe("dji_sdk/attitude",        1, &attitudeCb);
   ros::Subscriber control_cmd_sub   = nh.subscribe("uav_nav/vel_cmd",  	      1, &velCmdCb);
-  ros::Subscriber control_cmd_sub   = nh.subscribe("uav_nav/signal_interrupt",  	      1, &interruptCb);
+  ros::Subscriber signal_interupt_sub   = nh.subscribe("uav_nav/signal_interrupt",  	      1, &interruptCb);
 
   // Publish the control signal
   ctrl_vel_cmd_pub = nh.advertise<sensor_msgs::Joy>("dji_sdk/flight_control_setpoint_generic", 1);
@@ -155,7 +155,7 @@ void attitudeCb(const geometry_msgs::QuaternionStamped::ConstPtr& msg)
   quatToEuler();
 }
 
-void interruptCb(const std_msgs::Int8::ConstPtr& msg)
+void interruptCb(const std_msgs::UInt8::ConstPtr& msg)
 {
   interrupt_msg = msg->data;
   if (interrupt_msg == 1)

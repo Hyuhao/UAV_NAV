@@ -36,6 +36,7 @@ void flightStatusCb(const std_msgs::UInt8::ConstPtr& msg);
 void GPSPositionCb(const sensor_msgs::NavSatFix::ConstPtr& msg);
 void GPSHealthCb(const std_msgs::UInt8::ConstPtr& msg);
 void attitudeCb(const geometry_msgs::QuaternionStamped::ConstPtr& msg);
+void interruptCb(const std_msgs::UInt8::ConstPtr& msg);
 void velCmdCb(const geometry_msgs::TwistStamped::ConstPtr& msg);
 
 // Publishers
