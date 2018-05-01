@@ -42,6 +42,7 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
 	{
 	   interrupt_signal.data = 0;
 	   signal_interrupt.publish(interrupt_signal);
+	   ROS_ERROR("Range reading were OK, resetting interrupt signal");
 	}
 	// Check time between function calls
 	if (time_now_sec-tmp_time_sec > threshold_sec)
