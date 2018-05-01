@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/Bool.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Vector3Stamped.h>
@@ -8,9 +9,12 @@
 // Global variables
 std_msgs::Int8 interrupt_signal;
 ros::Publisher signal_interrupt;
+// ros::Subscriber safety 	= nh.subscribe("uav_nav/safety", 1, &safetyCb);
 double threshold_sec = 0.5;
 float ultrasonic_threshold = 2;
 float ultrasonic_intensity = 1;
+bool safety_isSolved = false;
+bool safetyFlag = true;
 	
 // Callback functions
 void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
@@ -22,14 +26,23 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
 	// Check range values
 	for (int n = 1; n  < 5; n++)
 	{
-	  if (msg.ranges[n] < ultrasonic_threshold && msg.intensities[n] == ultrasonic_intensity)
+	  if (*msg.ranges[n] < ultrasonic_threshold && *msg.intensities[n] == ultrasonic_intensity)
 	  {
-	    interrupt_signal.data = 2;
-	    signal_interrupt.publish(interrupt_signal);
+	    safetyFlag = true;
             ROS_ERROR("Interrupt signal was triggered. Range reading was %f", msg.ranges[n]);
 	  }
 	}
-	
+	// If range values were
+	if (safetyFlag)
+	{
+	   interrupt_signal.data = 2;
+	   signal_interrupt.publish(interrupt_signal);
+	}
+	else
+	{
+	   interrupt_signal.data = 0;
+	   signal_interrupt.publish(interrupt_signal);
+	}
 	// Check time between function calls
 	if (time_now_sec-tmp_time_sec > threshold_sec)
 	{
@@ -39,10 +52,20 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
 	}
 	
 	tmp_time_sec = time_now_sec;
-
+	safetyFlag = false;
 	return;
 }
-
+/*
+void safetyCb(const std_msgs::Bool& msg)
+{
+	safety_isSolved = msg->data;
+	if (safety_isSolved == true)
+	{
+		interrupt_signal.data = 0;	// Reset the interrupt signal
+	}
+	return;
+}
+*/
 void laser_scan_callback(const sensor_msgs::LaserScan& msg)
 {
 	std::string name = "depth sensor";
