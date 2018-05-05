@@ -178,9 +178,12 @@ void velCmdCb(const geometry_msgs::TwistStamped::ConstPtr& msg)
       sendVelCmd(vel_cmd);
       break;
     case 2:	//Rotate
-      vel_cmd.twist.linear.x = 0;
-      vel_cmd.twist.angular.z = 1;
-      sendVelCmd(vel_cmd);
+      geometry_msgs::TwistStamped vel_cmd2;
+      vel_cmd2.header.stamp = ros::Time::now();
+      vel_cmd2.header.frame_id = "vfh_vel_cmd2";
+      vel_cmd2.twist.linear.x = 0;
+      vel_cmd2.twist.angular.z = 1;
+      sendVelCmd(vel_cmd2);
   }
 }
 
