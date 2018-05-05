@@ -15,7 +15,7 @@ sensor_msgs::NavSatFix           current_gps_position;
 uint8_t                          flight_status               = 255; // Enum representing drone state upon take off
 uint8_t                          current_gps_health          = 0;   // Number of GPS satellite connections
 int 				 ctrl_state		     = 0;   // State machine controller
-uint8				 interrupt_msg               = 0;   // Msg from safety node
+uint8_t			 interrupt_msg               = 0;   // Msg from safety node
 
 int main(int argc, char** argv)
 {
