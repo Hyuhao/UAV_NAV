@@ -111,6 +111,11 @@ target_link_libraries(vfh
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS})
 
+add_executable(safety src/safety_interrupt.cc)
+target_link_libraries(safety
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS})
+
 add_executable(vfh_server src/vfh_services.cc)
 target_link_libraries(vfh_server ${catkin_LIBRARIES})
 add_dependencies(vfh_server uav_nav_gencpp)
