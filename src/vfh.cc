@@ -62,6 +62,7 @@ int main(int argc, char** argv)
   hist_grid = cv::Mat::zeros(histDimension, histDimension, CV_8UC1);
   circle_mask = cv::Mat::zeros(histDimension, histDimension, CV_8UC1);
   circle(circle_mask, cv::Point((hist_grid.rows-1)/2, (hist_grid.cols-1)/2), CAMERARANGE*2, cv::Scalar(255), -1, 8, 0);
+    //draws a filled circle. circle(img, point center(middle of grid), radius(Camerarange*2), filled)
 
     // Virtual obstacles
   line(hist_grid, cv::Point(30, 20), cv::Point(23, 10), cv::Scalar(255), 1, 4);
