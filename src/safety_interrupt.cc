@@ -8,20 +8,25 @@
 // Global variables
 std_msgs::UInt8 interrupt_signal;
 ros::Publisher signal_interrupt;
-// ros::Subscriber safety 	= nh.subscribe("uav_nav/safety", 1, &safetyCb);
 double threshold_sec = 0.5;
 float ultrasonic_threshold = 2;
 float ultrasonic_intensity = 1;
-bool safety_isSolved = false;
 bool safetyFlag = true;
-	
+
+// Timer resets
+double ultrasonic_reset;
+double laser_scan_reset;
+double rpy_reset;
+double local_pos_reset;
+double velocity_reset;
+double vel_cmd_reset;
+
+// Callback Timer counters
+double ultrasonic_counter, laser_scan_counter, rpy_counter, local_pos_counter, velocity_counter, vel_cmd_counter;
 // Callback functions
 void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
-{
-	std::string name = "ultrasonic sensor";
-	static double tmp_time_sec = ros::Time::now().toSec();
-	double time_now_sec = ros::Time::now().toSec();
-	
+{	
+	ultrasonic_reset = ros::Time::now().toSec();;
 	// Check range values
 	for (int n = 1; n  < 5; n++)
 	{
@@ -31,7 +36,7 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
             ROS_ERROR("Interrupt signal was triggered. Range reading was %f", msg.ranges[n]);
 	  }
 	}
-	// If range values were
+	// If range values were too close
 	if (safetyFlag)
 	{
 	   interrupt_signal.data = 2;
@@ -43,111 +48,37 @@ void ultrasonic_callback(const sensor_msgs::LaserScan& msg)
 	   signal_interrupt.publish(interrupt_signal);
 	   ROS_ERROR("Range reading were OK, resetting interrupt signal");
 	}
-	// Check time between function calls
-	if (time_now_sec-tmp_time_sec > threshold_sec)
-	{
-		interrupt_signal.data = 1;
-		signal_interrupt.publish(interrupt_signal);
-		ROS_ERROR("Interrupt signal was triggered. Time between %s readings was %f.", name.c_str(), time_now_sec-tmp_time_sec );
-	}
-	
-	tmp_time_sec = time_now_sec;
 	safetyFlag = false;
 	return;
 }
-/*
-void safetyCb(const std_msgs::Bool& msg)
-{
-	safety_isSolved = msg->data;
-	if (safety_isSolved == true)
-	{
-		interrupt_signal.data = 0;	// Reset the interrupt signal
-	}
-	return;
-}
-*/
+
 void laser_scan_callback(const sensor_msgs::LaserScan& msg)
 {
-	std::string name = "depth sensor";
-	static double tmp_time_sec = ros::Time::now().toSec();
-	double time_now_sec = ros::Time::now().toSec();
-
-	if (time_now_sec-tmp_time_sec > threshold_sec)
-	{
-		interrupt_signal.data = 1;
-		signal_interrupt.publish(interrupt_signal);
-		ROS_ERROR("Interrupt signal was triggered. Time between %s readings was %f.", name.c_str(), time_now_sec-tmp_time_sec );
-	}
-	tmp_time_sec = time_now_sec;
-
+	laser_scan_reset = ros::Time::now().toSec();;
 	return;
 }
 
 void rpy_callback(const geometry_msgs::Vector3Stamped& msg)
 {
-	std::string name = "roll pitch yaw";
-	static double tmp_time_sec = ros::Time::now().toSec();
-	double time_now_sec = ros::Time::now().toSec();
-
-	if (time_now_sec-tmp_time_sec > threshold_sec)
-	{
-		interrupt_signal.data = 1;
-		signal_interrupt.publish(interrupt_signal);
-		ROS_ERROR("Interrupt signal was triggered. Time between %s readings was %f.", name.c_str(), time_now_sec-tmp_time_sec );
-	}
-	tmp_time_sec = time_now_sec;
-
+	rpy_reset = ros::Time::now().toSec();;
 	return;
 }
 
 void local_pos_callback(const geometry_msgs::PointStamped& msg)
 {
-	std::string name = "local position";
-	static double tmp_time_sec = ros::Time::now().toSec();
-	double time_now_sec = ros::Time::now().toSec();
-
-	if (time_now_sec-tmp_time_sec > threshold_sec)
-	{
-		interrupt_signal.data = 1;
-		signal_interrupt.publish(interrupt_signal);
-		ROS_ERROR("Interrupt signal was triggered. Time between %s readings was %f.", name.c_str(), time_now_sec-tmp_time_sec );
-	}
-	tmp_time_sec = time_now_sec;
-
+	local_pos_reset = ros::Time::now().toSec();;
 	return;
 }
 
 void velocity_callback(const geometry_msgs::Vector3Stamped& msg)
 {
-	std::string name = "velocity";
-	static double tmp_time_sec = ros::Time::now().toSec();
-	double time_now_sec = ros::Time::now().toSec();
-
-	if (time_now_sec-tmp_time_sec > threshold_sec)
-	{
-		interrupt_signal.data = 1;
-		signal_interrupt.publish(interrupt_signal);
-		ROS_ERROR("Interrupt signal was triggered. Time between %s readings was %f.", name.c_str(), time_now_sec-tmp_time_sec );
-	}
-	tmp_time_sec = time_now_sec;
-
+	velocity_reset = ros::Time::now().toSec();;
 	return;
 }
 
 void vel_cmd_callback(const sensor_msgs::Joy& msg)
 {
-	std::string name = "velocity control commands";
-	static double tmp_time_sec = ros::Time::now().toSec();
-	double time_now_sec = ros::Time::now().toSec();
-
-	if (time_now_sec-tmp_time_sec > threshold_sec)
-	{
-		interrupt_signal.data = 1;
-		signal_interrupt.publish(interrupt_signal);
-		ROS_ERROR("Interrupt signal was triggered. Time between %s was %f.", name.c_str(), time_now_sec-tmp_time_sec );
-	}
-	tmp_time_sec = time_now_sec;
-
+	vel_cmd_reset = ros::Time::now().toSec();
 	return;
 }
 
@@ -155,6 +86,12 @@ int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "safety_interrupt");
 	ros::NodeHandle nh;
+	vel_cmd_reset = ros::Time::now().toSec();
+	velocity_reset = ros::Time::now().toSec();
+	rpy_reset = ros::Time::now().toSec();
+	ultrasonic_reset = ros::Time::now().toSec();
+	laser_scan_reset = ros::Time::now().toSec();
+	local_pos_reset = ros::Time::now().toSec();
 
 	// Subscribers
 	ros::Subscriber ultrasonic_sub	= nh.subscribe("uav_nav/guidance/ultrasonic", 1, &ultrasonic_callback);// sensor_feedback
@@ -168,7 +105,33 @@ int main(int argc, char** argv)
 	signal_interrupt = nh.advertise<std_msgs::UInt8>("uav_nav/signal_interrupt", 1);
 
 	interrupt_signal.data = 0;
-	ros::spin();
 
+	// check resets
+	while (ros::OK)
+	{
+		if (interrupt_signal.data != 2)
+		{	
+		vel_cmd_counter = ros::Time::now().toSec() - vel_cmd_reset;
+		velocity_counter = ros::Time::now().toSec() - velocity_reset;
+		rpy_counter = ros::Time::now().toSec() - rpy_reset;
+		ultrasonic_counter = ros::Time::now().toSec() - ultrasonic_reset;
+		laser_scan_counter = ros::Time::now().toSec() - laser_scan_reset;
+		local_pos_counter = ros::Time::now().toSec() - local_pos_reset;
+
+		interrupt_signal.data = vel_cmd_counter > threshold_sec ? 1 : 0;
+		interrupt_signal.data = velocity_counter > threshold_sec ? 1 : 0;
+		interrupt_signal.data = rpy_counter > threshold_sec ? 1 : 0;
+		interrupt_signal.data = ultrasonic_counter > threshold_sec ? 1 : 0;
+		interrupt_signal.data = laser_scan_counter > threshold_sec ? 1 : 0;
+		interrupt_signal.data = local_pos_counter > threshold_sec ? 1 : 0;
+
+		signal_interrupt.publish(interrupt_signal);
+		ros::spinOnce();
+		}
+		else
+		{
+		ros::spinOnce();
+		}
+	}
 	return 0;
 }
