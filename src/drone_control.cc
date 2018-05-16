@@ -160,11 +160,15 @@ void interruptCb(const std_msgs::UInt8::ConstPtr& msg)
   interrupt_msg = msg->data;
   if (interrupt_msg == 1)
   {
-	  ctrl_state = 0;
+	  ctrl_state = 3;
   }
   else if (interrupt_msg == 2)
   {
 	  ctrl_state = 2;
+  }
+  else if (interrupt_msg == 0)
+  {
+	  ctrl_state = 1;
   }
 }
 
@@ -172,18 +176,27 @@ void velCmdCb(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
   vel_cmd = *msg;
 
+  geometry_msgs::TwistStamped vel_rotate;
+  vel_cmd2.header.stamp = ros::Time::now();
+  vel_cmd2.header.frame_id = "vfh_vel_rotate";
+  vel_cmd2.twist.linear.x = 0;
+  vel_cmd2.twist.angular.z = 1;
+  
+  geometry_msgs::TwistStamped vel_break;
+  vel_cmd2.header.stamp = ros::Time::now();
+  vel_cmd2.header.frame_id = "vfh_vel_break";
+  vel_cmd2.twist.linear.x = 0;
+  vel_cmd2.twist.angular.z = 0;
+
   switch(ctrl_state) {
     case 0:	break;
     case 1:
       sendVelCmd(vel_cmd);
       break;
     case 2:	//Rotate
-      geometry_msgs::TwistStamped vel_cmd2;
-      vel_cmd2.header.stamp = ros::Time::now();
-      vel_cmd2.header.frame_id = "vfh_vel_cmd2";
-      vel_cmd2.twist.linear.x = 0;
-      vel_cmd2.twist.angular.z = 1;
-      sendVelCmd(vel_cmd2);
+      sendVelCmd(vel_rotate);
+    case 3:     //Hover
+      sendVelCmd(vel_break);
   }
 }
 
