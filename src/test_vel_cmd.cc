@@ -1,4 +1,7 @@
 #include "uav_nav/test_vel_cmd.h"
+#include <fstream>
+
+using namespace std;
 
 // Global variables
 ros::ServiceClient               query_version_service;
@@ -13,6 +16,7 @@ sensor_msgs::NavSatFix           current_gps_position;
 uint8_t                          flight_status               = 255; // Enum representing drone state upon take off
 uint8_t                          current_gps_health          = 0;   // Number of GPS satellite connections
 int 						                 ctrl_state 	        			 = 0;   // State machine controller
+std::vector<float> velocities;  // Velocities
 
 int main(int argc, char** argv)
 {
@@ -30,12 +34,13 @@ int main(int argc, char** argv)
   ros::Subscriber gps_pos_sub       = nh.subscribe("dji_sdk/gps_position",    1, &GPSPositionCb);
   ros::Subscriber gps_health_sub    = nh.subscribe("dji_sdk/gps_health",      1, &GPSHealthCb);
   ros::Subscriber attitude 		      = nh.subscribe("dji_sdk/attitude",        1, &attitudeCb);
+  ros::Subscriber vel_sub = nh.subscribe("dji_sdk/velocity", 1, &velocityCb);
 
   // Publish the control signal
   ctrl_vel_cmd_pub = nh.advertise<sensor_msgs::Joy>("dji_sdk/flight_control_setpoint_generic", 1);
   rpy_pub          = nh.advertise<geometry_msgs::Vector3Stamped>("uav_nav/roll_pitch_yaw",     1);
 
-  ros::Duration(20).sleep(); // Finger-preservation delay
+  ros::Duration(5).sleep(); // Finger-preservation delay
 
   if(isM100() && setLocalPositionRef())
   {
@@ -55,18 +60,13 @@ int main(int argc, char** argv)
   switch(ctrl_state) {
     case 0:	break;
     case 1:
-      sendDemoCmd(1.5, 1, 0, 0); 	// Fly forward for 1.5 sec...
-      sendDemoCmd(5, 0, 0, 0);		// ...Wait for 5 sec...
-      sendDemoCmd(1.5, -1, 0, 0);	// ...and fly back
-      sendDemoCmd(5, 0, 0, 0);
-      sendDemoCmd(1.5, 0, 1, 0);	// Fly along y axis for 1.5 sec
-      sendDemoCmd(5, 0, 0, 0);
-      sendDemoCmd(1.5, 0, -1, 0);
-      sendDemoCmd(1.5, 0, 0, 1);  // Positive yawrate
+      sendDemoCmd(5, 1.5, 0, 0); 	// Fly forward for 5 sec...
+      sendDemoCmd(500, 0, 0, 0);		// ...Wait for 5 sec...
+      ofstream myfile("vel.txt", ios::out | ios::binary);
+      myfile << velocities << "\n";
+      myfile.close();
       break;
   }
-
-  sendDemoCmd(5, 0, 0, 0);  // Stop
   monitoredLanding();
   obtainControl(false);
 
@@ -201,6 +201,11 @@ void attitudeCb(const geometry_msgs::QuaternionStamped::ConstPtr& msg)
   attitude_state = *msg;
 
   quatToEuler();
+}
+
+void velocityCb(const geometry_msgs::Vector3Stamped::ConstPtr& msg)
+{
+  velocities ->push_back(*msg);
 }
 
 void sendDemoCmd(float delay, float xCmd, float yCmd, float yawCmd)
